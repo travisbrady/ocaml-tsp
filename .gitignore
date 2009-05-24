@@ -1,0 +1,6 @@
+*.swp
+build/*
+*.o
+*.cmi
+*.cmx
+.DS_STORE
