@@ -7,6 +7,10 @@ let take n l =
         | (nx,(x::xs)) -> _take (n - 1) xs (x::acc) in
     List.rev (_take n l [])
 
+let rec drop n = function
+    | _ :: l when n > 0 -> drop (n-1) l
+    | l -> l
+
 let split_at n lst =  
     let rec _split_at n l acc1 acc2 =
         match l with
