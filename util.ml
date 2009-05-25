@@ -36,3 +36,12 @@ let rec zip xs ys =
     | [],_ -> []
     | _,[] -> []
     |x::xs, y::ys -> (x,y)::(zip xs ys)
+
+(* Find the index of the min *)
+let indmin xs = 
+    let rec indmin' xs currmin currind i = match xs with
+        [] -> currind
+        | (x::xs) when x < currmin -> indmin' xs x i (i+1)
+        | (x::xs) -> indmin' xs currmin currind (i+1)
+    in
+    indmin' xs 1000000 0 0
