@@ -4,3 +4,4 @@ build/*
 *.cmi
 *.cmx
 .DS_STORE
+tsp.native
