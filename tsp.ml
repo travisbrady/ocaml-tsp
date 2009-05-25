@@ -90,15 +90,30 @@ let list_min = List.fold_left min 1000000
 
 let random_of xs n = List.nth xs (Random.int n)
 
-(* TODO: DO THIS *)
-let tournament dist_map n tours = 0
+let tournament dist_machine n tours = 
+    let len = List.length tours in
+    let contestants = List.map (fun x ->
+        random_of tours len) (Util.range 0 n) in
+    let dists = List.map dist_machine contestants in
+    List.nth tours (Util.indmin dists)
 
+let choose_one dist_array city mom dad not_picked =
+    let mom_next = get_next_city mom city in
+    let dad_next = get_next_city dad city in
+    let mom_dist = dist_array.(city).(mom_next) in
+    let dad_dist = dist_array.(city).(dad_next) in
+    match mom_dist <= dad_dist && List.mem mom_next not_picked with
+        true -> mom_next
+        | false -> match dad_dist <= mom_dist 
+            && List.mem dad_next not_picked with
+            true -> dad_next
+            | false -> List.hd not_picked
 
 let _ = 
 
     let dm = init_proc in
+    let dist_machine = tour_dist dm in
     let opt_tour = get_opt_tour in
-    printf "%s\n" "hi";
     let otd = tour_dist dm opt_tour in 
     printf "%i\n" otd;
     let tour = make_tour 51 in
@@ -107,5 +122,11 @@ let _ =
     printf "%i\n" (get_next_city tour 1);
     let tour_dists = List.map (tour_dist dm) tours in
     printf "%i\n" (List.length tour_dists);
-    let minny = list_min tour_dists in
-    printf "%i\n" minny;
+    (* let minny = list_min tour_dists in *)
+    let winner = tournament dist_machine 3 tours in
+    let winner_len = dist_machine winner in
+    let chooser = choose_one dm in
+    let hack = chooser 1 winner winner (Util.range 2 51) in
+    printf "%i\n" (List.length winner);
+    printf "%i\n"  hack;
+
