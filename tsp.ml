@@ -1,4 +1,5 @@
 open Printf
+module R=Random
 
 let opt_file = "data/eil51.opt.tour"
 let file = "data/eil51.tsp"
@@ -9,6 +10,7 @@ let sum = List.fold_left (+) 0
 let split_coords x = Str.split space x
 
 let nint x = truncate(x +. 0.5);;
+let ($) f x = fun f x -> f x;;
 
 let dist (_, x1, y1) (_, x2, y2) = 
     nint(sqrt(((x1 -. x2)**2.0 +. (y1 -. y2)**2.0)))
@@ -36,8 +38,18 @@ let get_dist num1 num2 da = let x = num1 - 1 in
     let y = num2 - 1 in
     da.(x).(y)
 
+(*
 let tour_dist da tour = sum (List.map (fun (x, y) ->
     get_dist x y da) (Util.zip tour (List.tl tour)))
+*)
+
+let tour_dist da tour =
+    let rec tour_dist' tour total = match tour with
+        [] -> total
+        | [x] -> total + (get_dist x 1 da)
+        | (x::y::rest) -> tour_dist' (y::rest) ((get_dist x y da) + total)
+    in
+    tour_dist' (1::tour) 0
 
 let proc_file = 
     let ic = open_in file in
@@ -74,9 +86,7 @@ let init_proc =
     let cities = de_option(List.map make_city hey) in
     make_dist_array cities
 
-let make_tour ncities = 
-    let cr = Util.shuffle(Util.range 2 ncities) in
-    List.append (1::cr) [1]
+let make_tour ncities = Util.shuffle(Util.range 2 ncities)
 
 let make_many_tours ncities ntours = List.map (fun x -> 
     make_tour ncities) (Util.range 1 ntours)
@@ -88,7 +98,7 @@ let get_next_city tour city =
 let list_max = List.fold_left max 0
 let list_min = List.fold_left min 1000000
 
-let random_of xs n = List.nth xs (Random.int n)
+let random_of xs n = List.nth xs (R.int n)
 
 let tournament dist_machine n tours = 
     let len = List.length tours in
@@ -109,6 +119,17 @@ let choose_one dist_array city mom dad not_picked =
             true -> dad_next
             | false -> List.hd not_picked
 
+(*
+let two_opt dist_machine tour = 
+    let tour_len = (List.length tour + 1) in
+    let [si, ei] = List.sort [R.int tour_len; R.int tour_len] in
+    let start = Util.take si tour in
+    let mid = Util.take (ei - si) $ Util.drop si tour in
+    let _end = Util.drop ei tour in
+    let _done = 0 in
+    0
+*)
+
 let _ = 
 
     let dm = init_proc in
@@ -124,9 +145,10 @@ let _ =
     printf "%i\n" (List.length tour_dists);
     (* let minny = list_min tour_dists in *)
     let winner = tournament dist_machine 3 tours in
-    let winner_len = dist_machine winner in
     let chooser = choose_one dm in
     let hack = chooser 1 winner winner (Util.range 2 51) in
     printf "%i\n" (List.length winner);
+    let tourn_machine = tournament dist_machine 3 in
     printf "%i\n"  hack;
+
 
