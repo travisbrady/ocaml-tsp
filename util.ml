@@ -49,3 +49,11 @@ let indmin xs =
         | (x::xs) -> indmin' xs currmin currind (i+1)
     in
     indmin' xs 1000000 0 0
+
+let remove x lst = 
+    let rec remove' x lst acc = match lst with
+        | [] -> acc
+        | h::rest when h==x -> remove' x rest acc
+        | h::rest -> remove' x rest (h::acc)
+    in
+    List.rev (remove' x lst [])
