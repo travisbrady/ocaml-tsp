@@ -54,4 +54,4 @@ let rec delete_by eq x lst = match lst with
     | [] -> []
     | (y::ys) -> if eq x y then ys else y :: delete_by eq x ys
 
-let delete = delete_by (==)
+let delete x lst = delete_by (==) x lst
