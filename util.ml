@@ -50,10 +50,8 @@ let indmin xs =
     in
     indmin' xs 1000000 0 0
 
-let remove x lst = 
-    let rec remove' x lst acc = match lst with
-        | [] -> acc
-        | h::rest when h==x -> remove' x rest acc
-        | h::rest -> remove' x rest (h::acc)
-    in
-    List.rev (remove' x lst [])
+let rec delete_by eq x lst = match lst with
+    | [] -> []
+    | (y::ys) -> if eq x y then ys else y :: delete_by eq x ys
+
+let delete = delete_by (==)
