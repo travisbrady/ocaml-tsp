@@ -1,14 +1,16 @@
 open Printf
 module R=Random
 
-let tours_per_gen = 1200 
+let tours_per_gen = 800 
 let generations = 100
-let mut_prob = 0.9
-let cross_prob = 0.03
+let mut_prob = 0.1
+let cross_prob = 0.3
+let k_tourn_entrants = 3
+
 let opt_file = "data/eil51.opt.tour"
 let file = "data/eil51.tsp"
-let num = Str.regexp "^[0-9]"
-let space = Str.regexp " "
+let num = Str.regexp "^ *[0-9]"
+let space = Str.regexp " +"
 let list_min = List.fold_left min 1000000
 let split_coords x = Str.split space x
 let nint x = truncate(x +. 0.5);;
@@ -28,8 +30,11 @@ let de_option l = List.rev (List.fold_left (fun acc x ->
 let create_dist_map cities = List.map (fun x ->
     List.map (fun y -> dist x y) cities) cities
 
-let make_dist_array cities = Array.of_list 
-    (List.map Array.of_list (create_dist_map cities))
+let make_dist_array cities = 
+    printf "%d\n" (List.length cities);
+    let b = Array.of_list (List.map Array.of_list (create_dist_map cities)) in
+    printf "%d\n" (Array.length b);
+    b
 
 (* Lookup distance from one city to another *)
 let get_dist num1 num2 da = let x = num1 - 1 in
@@ -76,7 +81,8 @@ let init_proc =
     let coords = List.filter (fun x -> 
         Str.string_match num x 0) lines in
     let hey = List.map split_coords coords in
-    let cities = de_option(List.map make_city hey) in
+    let opt_cities = List.map make_city hey in
+    let cities = de_option(opt_cities) in
     make_dist_array cities
 
 let make_tour ncities = Util.shuffle(Util.range 2 ncities)
@@ -160,6 +166,7 @@ let maybe_cross chooser tourn_machine tour pop =
         | false -> tour
         | true -> let dad = tourn_machine pop in
             greedy_cross chooser tour dad tour []
+(*
 let test_maybe_cross =
     let dm = init_proc in
     let dist_machine = tour_dist dm in
@@ -170,6 +177,7 @@ let test_maybe_cross =
     let t = List.hd tours in
     let winner = tourn_machine tours in
     mutate dist_machine winner
+*)
 
 let gen_generation crosser tourn_machine mutator pop pop_size =
     let rec gen_generation' pop_size acc = 
@@ -195,13 +203,14 @@ let rec keep_on dist_machine genmach pop generations =
     
 let _ = 
     R.self_init ();
-    printf "%s\n!" "init_proc";
-    flush stdout;;
+    printf "%s\n%!" "init_proc";
     let dm = init_proc in
+    let ncities = Array.length dm in
+    printf "%d\n%!" ncities;
     let dist_machine = tour_dist dm in
-    let tours = make_many_tours 51 15000 in
+    let tours = make_many_tours ncities 15000 in
     let chooser = choose_one dm in
-    let tourn_machine = tournament dist_machine 3 in
+    let tourn_machine = tournament dist_machine k_tourn_entrants in
     let crosser = maybe_cross chooser tourn_machine in
     let gengen = gen_generation crosser tourn_machine (mutate dist_machine) in
     printf "%s\n!" "Go!";
@@ -209,9 +218,7 @@ let _ =
     let best = argmin dist_machine b in
     let ot = get_opt_tour in
     let opt_dist = dist_machine ot in
-    (*
-    List.map (fun x -> printf "%d\n" x) blap;
-    *)
-    printf "%s\n!" "hi";
-    printf "\n%d\n" opt_dist;
+    printf "best_test\n";
+    printf "%d\n\n" opt_dist;
+    List.map (fun x -> printf "%d\n" x) best;
 

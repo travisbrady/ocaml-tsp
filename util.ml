@@ -20,17 +20,17 @@ let split_at n lst =
         in
     _split_at n lst [] []
 
-let b = [1;2;3;4;5;6;7;8;9;10;11]
-let c = split_at 4 b
-
 let shuffle l = 
     let rec shuffle' l acc = match l with
         [] -> acc
         | l -> let k = Random.int (List.length l) in
                let (lead, (x::xs)) = split_at k l in
-               shuffle' (List.append lead xs) (x::acc)
+               shuffle' (List.rev_append lead xs) (x::acc)
         in
     shuffle' l []
+
+let b = [1;2;3;4;5;6;7;8;9;10;11]
+let c = split_at 4 b
 
 let rec range i j = if i > j then [] else i :: (range (i+1) j)
 
