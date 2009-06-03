@@ -1,8 +1,10 @@
 open Printf
 module R=Random
 
-let mut_prob = 0.8
-let cross_prob = 0.60
+let tours_per_gen = 1200 
+let generations = 100
+let mut_prob = 0.9
+let cross_prob = 0.03
 let opt_file = "data/eil51.opt.tour"
 let file = "data/eil51.tsp"
 let num = Str.regexp "^[0-9]"
@@ -64,7 +66,7 @@ let get_opt_tour =
             let lines = Str.split (Str.regexp "\n") buf in
             let c = List.filter (fun x -> Str.string_match num x 0) lines in
             let cities = List.map int_of_string c in
-            List.append cities [1]
+            List.tl cities
     with e ->
         close_in_noerr ic;
         raise e
@@ -94,12 +96,21 @@ let get_next_city tour city =
 
 let random_of xs n = List.nth xs (R.int n)
 
+let argmin dist_machine lst =
+    let rec argmin' lst curr curr_dist = match lst with
+        | [] -> curr
+        | (x::xs) -> let this_dist = dist_machine x in
+            if this_dist < curr_dist
+                then argmin' xs x this_dist 
+                else argmin' xs curr curr_dist
+    in
+    argmin' lst [] 1000000
+
 let tournament dist_machine n tours = 
     let len = List.length tours in
     let contestants = List.map (fun x ->
         random_of tours len) (Util.range 0 n) in
-    let dists = List.map dist_machine contestants in
-    List.nth tours (Util.indmin dists)
+    argmin dist_machine contestants
 
 let choose_one dist_array city mom dad not_picked =
     let mom_next = get_next_city mom city in
@@ -175,24 +186,32 @@ let gen_generation crosser tourn_machine mutator pop pop_size =
 let rec keep_on dist_machine genmach pop generations =
     match generations with
         | 0 -> pop
-        | x -> let ng = genmach pop 500
+        | x -> let ng = genmach pop tours_per_gen
         in
             let dists = List.map dist_machine ng in
             let mini = list_min dists in
-            if x mod 50 == 0 then printf "%d\n%!" mini else ();
+            if x mod 5 == 0 then printf "%d\n%!" mini else ();
             keep_on dist_machine genmach ng (x - 1)
     
 let _ = 
+    R.self_init ();
     printf "%s\n!" "init_proc";
     flush stdout;;
     let dm = init_proc in
     let dist_machine = tour_dist dm in
-    let tours = make_many_tours 51 5000 in
+    let tours = make_many_tours 51 15000 in
     let chooser = choose_one dm in
     let tourn_machine = tournament dist_machine 3 in
     let crosser = maybe_cross chooser tourn_machine in
     let gengen = gen_generation crosser tourn_machine (mutate dist_machine) in
     printf "%s\n!" "Go!";
-    let b = keep_on dist_machine gengen tours 3000 in
+    let b = keep_on dist_machine gengen tours generations in
+    let best = argmin dist_machine b in
+    let ot = get_opt_tour in
+    let opt_dist = dist_machine ot in
+    (*
+    List.map (fun x -> printf "%d\n" x) blap;
+    *)
     printf "%s\n!" "hi";
+    printf "\n%d\n" opt_dist;
 
