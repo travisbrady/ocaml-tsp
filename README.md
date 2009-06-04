@@ -6,7 +6,7 @@ implemented in OCaml.
 ##Traveling Salesman Problem
 
 Given a list of cities and their coordinates compute the shortest path passing
-through all cities and returning to the origin.  The problem is NP-Complete.
+through all cities and returning to the origin.  The problem is NP-hard.
 
 This code operates on tsp city data from [TSPLIB][http://www.iwr.uni-heidelberg.de/groups/comopt/software/TSPLIB95/tsp/ "TSPLIB data"] with EDGE_WEIGHT_TYPE EUC_2D.
 
