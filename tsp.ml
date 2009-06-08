@@ -1,49 +1,58 @@
 open Printf
 module R=Random
 
-let tours_per_gen = 800 
-let generations = 100
-let mut_prob = 0.1
-let cross_prob = 0.3
+let tours_per_gen = 1800 
+let generations = 150
+let mut_prob = 0.5
+let cross_prob = 0.5
 let k_tourn_entrants = 3
 
 let opt_file = "data/eil51.opt.tour"
 let file = "data/eil51.tsp"
 let num = Str.regexp "^ *[0-9]"
 let space = Str.regexp " +"
+
+(* val list_min : int list -> int *)
 let list_min = List.fold_left min 1000000
+(* val split_coords : string -> string list *)
 let split_coords x = Str.split space x
+(*val nint : float -> int *)
 let nint x = truncate(x +. 0.5);;
+(*val dist : 'a * float * float -> 'b * float * float -> int *)
 let dist (_, x1, y1) (_, x2, y2) = 
     nint(sqrt(((x1 -. x2)**2.0 +. (y1 -. y2)**2.0)))
 
 (* Accepts list of 3 string and produces a 3-tuple *)
+(*val make_city : string list -> (int * float * float) option *)
 let make_city = function
       [num; x; y] -> Some (int_of_string num, float_of_string x, float_of_string y)
     | _ -> None
 
+(* Like Haskell's Data.Maybe.catMaybes *)
+(* val de_option : 'a option list -> 'a list *)
 let de_option l = List.rev (List.fold_left (fun acc x ->
     match x with
-        None -> acc
+        | None -> acc
         | Some thing -> thing::acc) [] l)
 
+(* val create_dist_map : ('a * float * float) list -> int list list *)
 let create_dist_map cities = List.map (fun x ->
     List.map (fun y -> dist x y) cities) cities
 
+(*val make_dist_array : ('a * float * float) list -> int array array *)
 let make_dist_array cities = 
-    printf "%d\n" (List.length cities);
-    let b = Array.of_list (List.map Array.of_list (create_dist_map cities)) in
-    printf "%d\n" (Array.length b);
-    b
+    Array.of_list (List.map Array.of_list (create_dist_map cities))
 
 (* Lookup distance from one city to another *)
+(* val get_dist : int -> int -> 'a array array -> 'a *)
 let get_dist num1 num2 da = let x = num1 - 1 in
     let y = num2 - 1 in
     da.(x).(y)
 
+(* val tour_dist : int array array -> int list -> int *)
 let tour_dist da tour =
     let rec tour_dist' tour total = match tour with
-        [] -> total
+        | [] -> total
         | [x] -> total + (get_dist x 1 da)
         | (x::y::rest) -> tour_dist' (y::rest) ((get_dist x y da) + total)
     in
@@ -85,10 +94,15 @@ let init_proc =
     let cities = de_option(opt_cities) in
     make_dist_array cities
 
+(*
+val make_tour : int -> int list
+*)
 let make_tour ncities = Util.shuffle(Util.range 2 ncities)
+(* val make_many_tours : int -> int -> int list list *)
 let make_many_tours ncities ntours = List.map (fun x -> 
     make_tour ncities) (Util.range 1 ntours)
 
+(* val get_next_city : int list -> int -> int *)
 let get_next_city tour city =
     let rec loop t = match t with
         | [] -> raise Not_found
@@ -97,11 +111,13 @@ let get_next_city tour city =
         | (curr::rest) -> loop rest
     in
     match city with
-    | 1 -> List.hd tour
-    | x -> loop tour
+        | 1 -> List.hd tour
+        | x -> loop tour
 
+(* val random_of : 'a list -> int -> 'a *)
 let random_of xs n = List.nth xs (R.int n)
 
+(* val argmin : ('a list -> int) -> 'a list list -> 'a list *)
 let argmin dist_machine lst =
     let rec argmin' lst curr curr_dist = match lst with
         | [] -> curr
@@ -112,24 +128,29 @@ let argmin dist_machine lst =
     in
     argmin' lst [] 1000000
 
+(* val tournament : ('a list -> int) -> int -> 'a list list -> 'a list *)
 let tournament dist_machine n tours = 
     let len = List.length tours in
     let contestants = List.map (fun x ->
         random_of tours len) (Util.range 0 n) in
     argmin dist_machine contestants
 
+(* val choose_one :
+ * 'a array array -> int -> int list -> int list -> int list -> int
+ *)
 let choose_one dist_array city mom dad not_picked =
     let mom_next = get_next_city mom city in
     let dad_next = get_next_city dad city in
     let mom_dist = dist_array.(city - 1).(mom_next - 1) in
     let dad_dist = dist_array.(city - 1).(dad_next - 1) in
     match mom_dist <= dad_dist && List.mem mom_next not_picked with
-          true -> mom_next
+        | true -> mom_next
         | false -> match dad_dist <= mom_dist 
             && List.mem dad_next not_picked with
-              true -> dad_next
+            | true -> dad_next
             | false -> List.hd not_picked
 
+(* val mutate : ('a list -> 'b) -> 'a list -> 'a list *)
 let mutate dist_machine tour = 
     let rec two_opt tour = 
         let tour_len = (List.length tour + 1) in
@@ -140,14 +161,19 @@ let mutate dist_machine tour =
         let _end = Util.drop ei tour in
         let _done = List.concat [_start; mid; _end] in
         match (dist_machine _done ) < (dist_machine tour) with
-              true -> two_opt _done
+            | true -> two_opt _done
             | false -> tour
     in
     let mut_roll = R.float 1.0 in
     match mut_roll < mut_prob with
-          true -> two_opt tour
+        | true -> two_opt tour
         | false -> tour
 
+(*
+val greedy_cross :
+  (int -> 'a -> 'b -> int list -> int) ->
+  'a -> 'b -> int list -> int list -> int list
+*)
 let rec greedy_cross chooser mom dad not_picked acc =
     match not_picked with
         | [] -> acc
@@ -160,25 +186,19 @@ let rec greedy_cross chooser mom dad not_picked acc =
         let the_chosen = chooser city mom dad not_picked in
             greedy_cross chooser mom dad (Util.delete the_chosen not_picked) (the_chosen::acc)
 
+(* val maybe_cross : (int -> int list -> 'a -> int list -> int) ->
+  ('b -> 'a) -> int list -> 'b -> int list
+*)
 let maybe_cross chooser tourn_machine tour pop =
     let cross_roll = R.float 1.0 in
     match cross_roll < cross_prob with
         | false -> tour
         | true -> let dad = tourn_machine pop in
             greedy_cross chooser tour dad tour []
-(*
-let test_maybe_cross =
-    let dm = init_proc in
-    let dist_machine = tour_dist dm in
-    let tours = make_many_tours 51 100 in
-    let chooser = choose_one dm in
-    let tourn_machine = tournament dist_machine 3 in
-    let crosser = maybe_cross chooser tourn_machine in
-    let t = List.hd tours in
-    let winner = tourn_machine tours in
-    mutate dist_machine winner
-*)
 
+(* val gen_generation :
+  ('a -> 'b -> 'c) -> ('b -> 'a) -> ('c -> 'd) -> 'b -> int -> 'd list
+*)
 let gen_generation crosser tourn_machine mutator pop pop_size =
     let rec gen_generation' pop_size acc = 
         match pop_size with
@@ -191,6 +211,9 @@ let gen_generation crosser tourn_machine mutator pop pop_size =
     in
     gen_generation' pop_size []
 
+(* val keep_on :
+  ('a -> int) -> ('a list -> int -> 'a list) -> 'a list -> int -> 'a list
+*)
 let rec keep_on dist_machine genmach pop generations =
     match generations with
         | 0 -> pop
@@ -198,22 +221,20 @@ let rec keep_on dist_machine genmach pop generations =
         in
             let dists = List.map dist_machine ng in
             let mini = list_min dists in
-            if x mod 5 == 0 then printf "%d\n%!" mini else ();
+            if x mod 10 == 0 then printf "%d\n%!" mini else ();
             keep_on dist_machine genmach ng (x - 1)
-    
 let _ = 
     R.self_init ();
-    printf "%s\n%!" "init_proc";
     let dm = init_proc in
     let ncities = Array.length dm in
-    printf "%d\n%!" ncities;
+    printf "Begin with %d\n%!" ncities;
     let dist_machine = tour_dist dm in
     let tours = make_many_tours ncities 15000 in
     let chooser = choose_one dm in
     let tourn_machine = tournament dist_machine k_tourn_entrants in
     let crosser = maybe_cross chooser tourn_machine in
     let gengen = gen_generation crosser tourn_machine (mutate dist_machine) in
-    printf "%s\n!" "Go!";
+    print_string "Go!\n";
     let b = keep_on dist_machine gengen tours generations in
     let best = argmin dist_machine b in
     let ot = get_opt_tour in
@@ -221,4 +242,3 @@ let _ =
     printf "best_test\n";
     printf "%d\n\n" opt_dist;
     List.map (fun x -> printf "%d\n" x) best;
-
