@@ -24,4 +24,4 @@ This code operates on tsp city data from [TSPLIB][http://www.iwr.uni-heidelberg.
 ##Notes:
 
 I wrote this for fun and as a way to learn a bit of OCaml.
-Previously I'd written [a version in Haskell][http://github.com/travisbrady/shabonkie/tree/master "Shabonkie"]
+Previously I'd written [a version in Haskell](http://github.com/travisbrady/shabonkie/tree/master "Shabonkie")
