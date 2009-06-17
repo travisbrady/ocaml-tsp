@@ -22,7 +22,7 @@ let nint x = truncate(x +. 0.5);;
 let dist (_, x1, y1) (_, x2, y2) = 
     nint(sqrt(((x1 -. x2)**2.0 +. (y1 -. y2)**2.0)))
 
-(* Accepts list of 3 string and produces a 3-tuple *)
+(* Accepts list of 3 strings and produces a 3-tuple *)
 (*val make_city : string list -> (int * float * float) option *)
 let make_city = function
       [num; x; y] -> Some (int_of_string num, float_of_string x, float_of_string y)
